@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, Form, HTTPException
+import os
+from fastapi import APIRouter, Depends, Form
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.middleware.auth import get_current_user
 from app.utils.doc_number import generate_doc_number
 from app.services.pdf_service import generate_pdf
 from app.services.docx_service import generate_docx
-import os
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -23,11 +23,12 @@ def create_document(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    doc_no = generate_doc_number(db)
     os.makedirs("files", exist_ok=True)
 
+    doc_no = generate_doc_number(db)
     pdf_path = f"files/{doc_no}.pdf"
-    generate_pdf(None, content, pdf_path)  # letterhead later (Phase 2 step 2)
+
+    generate_pdf(db, content, pdf_path)
 
     docx_path = None
     if user["role"] == "admin":
@@ -35,6 +36,10 @@ def create_document(
         generate_docx(title, content, docx_path)
 
     return {
+        "document_number": doc_no,
+        "pdf": pdf_path,
+        "docx": docx_path
+    }    return {
         "document_number": doc_no,
         "pdf": pdf_path,
         "docx": docx_path
