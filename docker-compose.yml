@@ -1,0 +1,30 @@
+version: "3.9"
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: document_manager
+      MYSQL_USER: docuser
+      MYSQL_PASSWORD: docpass
+    volumes:
+      - db:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+
+  backend:
+    build: ./backend
+    environment:
+      DB_USER: docuser
+      DB_PASS: docpass
+      DB_NAME: document_manager
+      JWT_SECRET: supersecret
+      LETTERHEAD_PATH: app/assets/letterhead/letterhead.pdf
+    volumes:
+      - ./files:/app/files
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+
+volumes:
+  db:
