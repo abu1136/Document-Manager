@@ -34,8 +34,7 @@
 
     document.getElementById("setupForm").onsubmit = async (e) => {
       e.preventDefault();
-
-      document.getElementById("msg").innerText = "Creating admin…";
+      msg.innerText = "Creating admin…";
 
       const res = await fetch("/auth/setup", {
         method: "POST",
@@ -46,16 +45,20 @@
         })
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        document.getElementById("msg").innerText = data.detail || "Error";
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        msg.innerText = "Server error during setup";
         return;
       }
 
-      document.getElementById("msg").innerText =
-        "Admin created successfully. Redirecting to login…";
+      if (!res.ok) {
+        msg.innerText = data.detail || "Setup failed";
+        return;
+      }
 
+      msg.innerText = "Admin created successfully. Redirecting…";
       setTimeout(() => location.href = "/ui/login.html", 1500);
     };
 
