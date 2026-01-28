@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div style="float:right">
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <h2>User Dashboard</h2>
+
+  <h3>Create Document</h3>
+  <form id="docForm">
+    <input id="title" placeholder="Document Title" required />
+    <textarea id="content" placeholder="Document Content" rows="8" cols="60" required></textarea>
+    <br><br>
+    <button>Create Document</button>
+  </form>
+
+  <p id="msg"></p>
+
+  <div id="downloads" style="display:none;">
+    <h3>Downloads</h3>
+    <a id="pdfLink" target="_blank">Download PDF</a><br>
+    <a id="docxLink" target="_blank" style="display:none;">Download DOCX</a>
+  </div>
+
+  <script src="js/user.js"></script>
+</body>
+</html>
