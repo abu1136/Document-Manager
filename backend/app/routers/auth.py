@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Form
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.database import SessionLocal
 from app.models.user import User
@@ -35,14 +36,23 @@ def setup_admin(
     if len(password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
 
-    admin = User(
-        username=username,
-        password_hash=hash_pass(password),
-        role="admin"
-    )
+    try:
+        admin = User(
+            username=username,
+            password_hash=hash_pass(password),
+            role="admin"
+        )
+        db.add(admin)
+        db.commit()
+        db.refresh(admin)
 
-    db.add(admin)
-    db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Setup failed: {str(e)}")
 
     return {"status": "admin_created"}
 
