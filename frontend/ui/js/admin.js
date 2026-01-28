@@ -3,6 +3,11 @@ if (!token) location.href = "/ui/login.html";
 
 const headers = { "Authorization": "Bearer " + token };
 
+function logout() {
+  localStorage.removeItem("token");
+  location.href = "/ui/login.html";
+}
+
 // Load users
 async function loadUsers() {
   const res = await fetch("/admin/users", { headers });
@@ -21,7 +26,6 @@ async function loadUsers() {
     ul.appendChild(li);
   });
 }
-
 loadUsers();
 
 // Create user
@@ -30,7 +34,7 @@ document.getElementById("userForm").onsubmit = async e => {
 
   const res = await fetch("/admin/users", {
     method: "POST",
-    headers: headers,
+    headers,
     body: new URLSearchParams({
       username: u.value,
       password: p.value,
@@ -51,7 +55,7 @@ document.getElementById("lhForm").onsubmit = async e => {
 
   const res = await fetch("/admin/letterhead", {
     method: "POST",
-    headers: headers,
+    headers,
     body: fd
   });
 
