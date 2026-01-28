@@ -2,6 +2,8 @@ import os
 import shutil
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
 from app.database import SessionLocal
 from app.middleware.auth import get_current_user
 from app.models.user import User
@@ -26,7 +28,7 @@ def require_admin(user):
         raise HTTPException(status_code=403, detail="Admin only")
 
 
-# ---------- USER MANAGEMENT ----------
+# ===================== USERS =====================
 
 @router.get("/users")
 def list_users(
@@ -34,7 +36,11 @@ def list_users(
     db: Session = Depends(get_db)
 ):
     require_admin(user)
-    return db.query(User.id, User.username, User.role).all()
+    users = db.query(User).all()
+    return [
+        {"id": u.id, "username": u.username, "role": u.role}
+        for u in users
+    ]
 
 
 @router.post("/users")
@@ -50,18 +56,24 @@ def create_user(
     if role not in ("admin", "user"):
         raise HTTPException(status_code=400, detail="Invalid role")
 
-    new_user = User(
-        username=username,
-        password_hash=hash_pass(password),
-        role=role
-    )
+    try:
+        new_user = User(
+            username=username,
+            password_hash=hash_pass(password),
+            role=role
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
 
-    db.add(new_user)
-    db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Username already exists")
+
     return {"status": "user_created"}
 
 
-# ---------- LETTERHEAD UPLOAD ----------
+# ===================== LETTERHEAD =====================
 
 @router.post("/letterhead")
 def upload_letterhead(
@@ -83,6 +95,7 @@ def upload_letterhead(
         shutil.copyfileobj(file.file, buffer)
 
     db.query(Letterhead).update({"active": False})
+
     lh = Letterhead(
         filename=filename,
         filetype="pdf" if ext == "pdf" else "image",
