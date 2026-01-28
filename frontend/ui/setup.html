@@ -7,7 +7,9 @@
 <body>
   <h2>Initial Admin Setup</h2>
 
-  <form id="setupForm">
+  <div id="status"></div>
+
+  <form id="setupForm" style="display:none;">
     <input type="text" id="username" placeholder="Admin Username" required />
     <input type="password" id="password" placeholder="Password (min 8 chars)" required />
     <button type="submit">Create Admin</button>
@@ -15,12 +17,25 @@
 
   <p id="msg"></p>
 
-  <script src="js/auth.js"></script>
   <script>
-    checkSetupStatus();
+    async function initSetup() {
+      const res = await fetch("/auth/setup/status");
+      const data = await res.json();
+
+      if (!data.setup_required) {
+        document.getElementById("status").innerHTML =
+          "<b>Admin already configured.</b><br>Redirecting to login…";
+        setTimeout(() => location.href = "/ui/login.html", 2000);
+        return;
+      }
+
+      document.getElementById("setupForm").style.display = "block";
+    }
 
     document.getElementById("setupForm").onsubmit = async (e) => {
       e.preventDefault();
+
+      document.getElementById("msg").innerText = "Creating admin…";
 
       const res = await fetch("/auth/setup", {
         method: "POST",
@@ -32,12 +47,19 @@
       });
 
       const data = await res.json();
-      document.getElementById("msg").innerText = JSON.stringify(data);
 
-      if (res.ok) {
-        setTimeout(() => location.href = "/ui/login.html", 1500);
+      if (!res.ok) {
+        document.getElementById("msg").innerText = data.detail || "Error";
+        return;
       }
+
+      document.getElementById("msg").innerText =
+        "Admin created successfully. Redirecting to login…";
+
+      setTimeout(() => location.href = "/ui/login.html", 1500);
     };
+
+    initSetup();
   </script>
 </body>
 </html>
