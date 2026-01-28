@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Initial Admin Setup</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h2>Initial Admin Setup</h2>
+
+  <form id="setupForm">
+    <input type="text" id="username" placeholder="Admin Username" required />
+    <input type="password" id="password" placeholder="Password (min 8 chars)" required />
+    <button type="submit">Create Admin</button>
+  </form>
+
+  <p id="msg"></p>
+
+  <script src="js/auth.js"></script>
+  <script>
+    checkSetupStatus();
+
+    document.getElementById("setupForm").onsubmit = async (e) => {
+      e.preventDefault();
+
+      const res = await fetch("/auth/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          username: username.value,
+          password: password.value
+        })
+      });
+
+      const data = await res.json();
+      document.getElementById("msg").innerText = JSON.stringify(data);
+
+      if (res.ok) {
+        setTimeout(() => location.href = "/ui/login.html", 1500);
+      }
+    };
+  </script>
+</body>
+</html>
