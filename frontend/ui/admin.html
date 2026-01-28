@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h2>Admin Dashboard</h2>
+
+  <h3>Create User</h3>
+  <form id="userForm">
+    <input id="u" placeholder="Username" required />
+    <input id="p" placeholder="Password" type="password" required />
+    <select id="r">
+      <option value="user">User</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button>Create</button>
+  </form>
+  <p id="userMsg"></p>
+
+  <h3>Users</h3>
+  <ul id="userList"></ul>
+
+  <h3>Upload Letterhead</h3>
+  <form id="lhForm" enctype="multipart/form-data">
+    <input type="file" id="lhFile" required />
+    <button>Upload</button>
+  </form>
+  <p id="lhMsg"></p>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>
