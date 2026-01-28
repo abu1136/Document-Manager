@@ -1,14 +1,17 @@
 import os
 import shutil
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.middleware.auth import get_current_user
+from app.models.user import User
 from app.models.letterhead import Letterhead
+from app.utils.auth import hash_pass
 
 UPLOAD_DIR = "app/assets/letterhead"
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
 
 def get_db():
     db = SessionLocal()
@@ -17,35 +20,72 @@ def get_db():
     finally:
         db.close()
 
+
+def require_admin(user):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+
+# ---------- USER MANAGEMENT ----------
+
+@router.get("/users")
+def list_users(
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    require_admin(user)
+    return db.query(User.id, User.username, User.role).all()
+
+
+@router.post("/users")
+def create_user(
+    username: str = Form(...),
+    password: str = Form(...),
+    role: str = Form(...),
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    require_admin(user)
+
+    if role not in ("admin", "user"):
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    new_user = User(
+        username=username,
+        password_hash=hash_pass(password),
+        role=role
+    )
+
+    db.add(new_user)
+    db.commit()
+    return {"status": "user_created"}
+
+
+# ---------- LETTERHEAD UPLOAD ----------
+
 @router.post("/letterhead")
 def upload_letterhead(
     file: UploadFile = File(...),
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Admin only")
+    require_admin(user)
 
     ext = file.filename.split(".")[-1].lower()
-    if ext not in ["pdf", "png", "jpg", "jpeg"]:
+    if ext not in ("pdf", "png", "jpg", "jpeg"):
         raise HTTPException(status_code=400, detail="Unsupported file type")
 
-    filetype = "pdf" if ext == "pdf" else "image"
-
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-
     filename = f"letterhead.{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
+    path = os.path.join(UPLOAD_DIR, filename)
 
-    with open(filepath, "wb") as buffer:
+    with open(path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Deactivate old letterheads
     db.query(Letterhead).update({"active": False})
-
     lh = Letterhead(
         filename=filename,
-        filetype=filetype,
+        filetype="pdf" if ext == "pdf" else "image",
         uploaded_by=user["user_id"],
         active=True
     )
@@ -53,8 +93,4 @@ def upload_letterhead(
     db.add(lh)
     db.commit()
 
-    return {
-        "status": "success",
-        "filename": filename,
-        "type": filetype
-    }
+    return {"status": "letterhead_uploaded"}
