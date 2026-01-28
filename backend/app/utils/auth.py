@@ -11,21 +11,23 @@ pwd_context = CryptContext(
 SECRET = os.getenv("JWT_SECRET", "changeme")
 
 
-def _normalize_password(password: str) -> bytes:
+def _bcrypt_safe(password: str) -> str:
     """
-    bcrypt supports max 72 bytes.
-    Truncate safely after UTF-8 encoding.
+    Ensure password is safe for bcrypt (max 72 bytes).
+    Truncate AFTER utf-8 encoding, then decode back to str.
     """
-    return password.encode("utf-8")[:72]
+    pwd_bytes = password.encode("utf-8")
+    safe_bytes = pwd_bytes[:72]
+    return safe_bytes.decode("utf-8", errors="ignore")
 
 
 def hash_pass(password: str) -> str:
-    return pwd_context.hash(_normalize_password(password))
+    return pwd_context.hash(_bcrypt_safe(password))
 
 
 def verify(password: str, password_hash: str) -> bool:
     return pwd_context.verify(
-        _normalize_password(password),
+        _bcrypt_safe(password),
         password_hash
     )
 
