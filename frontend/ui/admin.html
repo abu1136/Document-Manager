@@ -1,39 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="css/style.css">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/ui/css/style.css">
 </head>
 <body>
+    <h2>Admin Dashboard</h2>
 
-  <div style="float:right">
-    <button onclick="logout()">Logout</button>
-  </div>
+    <div class="menu">
+        <button onclick="goAdminHome()">Dashboard</button>
+        <button onclick="goUsers()">Users</button>
+        <button onclick="goLetterhead()">Letterhead</button>
+        <button onclick="goHistory()">History</button>
+        <button onclick="goProfile()">Profile</button>
+        <button class="danger" onclick="logout()">Logout</button>
+    </div>
 
-  <h2>Admin Dashboard</h2>
+    <div id="content"></div>
 
-  <h3>Create User</h3>
-  <form id="userForm">
-    <input id="u" placeholder="Username" required />
-    <input id="p" placeholder="Password" type="password" required />
-    <select id="r">
-      <option value="user">User</option>
-      <option value="admin">Admin</option>
-    </select>
-    <button>Create</button>
-  </form>
-  <p id="userMsg"></p>
-
-  <h3>Users</h3>
-  <ul id="userList"></ul>
-
-  <h3>Upload Letterhead</h3>
-  <form id="lhForm" enctype="multipart/form-data">
-    <input type="file" id="lhFile" required />
-    <button>Upload</button>
-  </form>
-  <p id="lhMsg"></p>
-
-  <script src="js/admin.js"></script>
+    <script src="/ui/js/admin.js"></script>
 </body>
 </html>
