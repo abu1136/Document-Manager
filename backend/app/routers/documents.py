@@ -27,7 +27,7 @@ def create_document(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Check active letterhead
+    # Active letterhead check
     letterhead = (
         db.query(Letterhead)
         .filter(Letterhead.active == True)
@@ -51,13 +51,19 @@ def create_document(
             detail="Letterhead file missing on server"
         )
 
-    # Ensure output dir
     os.makedirs("files", exist_ok=True)
 
     doc_no = generate_doc_number(db)
 
     pdf_path = f"files/{doc_no}.pdf"
-    generate_pdf(letterhead_path, content, pdf_path)
+
+    # ✅ PASS document identifier to PDF service
+    generate_pdf(
+        letterhead_path=letterhead_path,
+        content=content,
+        output_path=pdf_path,
+        document_id=doc_no
+    )
 
     docx_path = None
     if user["role"] == "admin":
