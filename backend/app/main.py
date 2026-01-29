@@ -7,7 +7,7 @@ from sqlalchemy.exc import OperationalError
 from app.database import Base, engine
 from app.utils.schema_migrate import ensure_column
 
-# Import models (table creation)
+# Import models
 from app.models.user import User
 from app.models.letterhead import Letterhead
 from app.models.document import Document
@@ -20,7 +20,9 @@ app = FastAPI(title="Document Manager")
 
 @app.on_event("startup")
 def startup():
-    # -------- wait for DB --------
+    # -----------------------------
+    # Wait for DB
+    # -----------------------------
     for i in range(10):
         try:
             with engine.connect() as conn:
@@ -32,10 +34,14 @@ def startup():
     else:
         raise RuntimeError("Database not reachable")
 
-    # -------- create missing tables --------
+    # -----------------------------
+    # Create missing tables
+    # -----------------------------
     Base.metadata.create_all(bind=engine)
 
-    # -------- safe column migration --------
+    # -----------------------------
+    # Safe column migrations
+    # -----------------------------
     ensure_column(
         engine,
         table="documents",
@@ -48,6 +54,20 @@ def startup():
         table="documents",
         column="docx_path",
         ddl="ALTER TABLE documents ADD COLUMN docx_path VARCHAR(255)"
+    )
+
+    ensure_column(
+        engine,
+        table="documents",
+        column="created_by",
+        ddl="ALTER TABLE documents ADD COLUMN created_by INT"
+    )
+
+    ensure_column(
+        engine,
+        table="documents",
+        column="created_at",
+        ddl="ALTER TABLE documents ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
     )
 
 
