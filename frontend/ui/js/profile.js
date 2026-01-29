@@ -1,52 +1,25 @@
-async function loadProfile() {
-    const token = getToken();
-
-    const res = await fetch("/profile/me", {
-        headers: {
-            "Authorization": "Bearer " + token
-        }
-    });
-
-    if (!res.ok) {
-        document.getElementById("status").innerText = "Failed to load profile";
-        return;
-    }
-
-    const data = await res.json();
-    document.getElementById("username").innerText = data.username;
-    document.getElementById("role").innerText = data.role;
-}
-
-
-async function changePassword(event) {
-    event.preventDefault();
+async function changePassword(e) {
+    e.preventDefault();
 
     const token = getToken();
-    const currentPassword = document.getElementById("currentPassword").value;
-    const newPassword = document.getElementById("newPassword").value;
+    const msg = document.getElementById("msg");
+
+    const current = document.getElementById("currentPassword").value;
+    const newer = document.getElementById("newPassword").value;
 
     const res = await fetch("/profile/change-password", {
         method: "POST",
         headers: {
             "Authorization": "Bearer " + token,
-            "Content-Type": "application/json"
+            "Content-Type": "application/x-www-form-urlencoded"
         },
-        body: JSON.stringify({
-            current_password: currentPassword,
-            new_password: newPassword
+        body: new URLSearchParams({
+            current_password: current,
+            new_password: newer
         })
     });
 
-    const status = document.getElementById("status");
+    const data = await res.json();
 
-    if (res.ok) {
-        status.innerText = "Password updated successfully";
-        status.style.color = "green";
-        document.getElementById("currentPassword").value = "";
-        document.getElementById("newPassword").value = "";
-    } else {
-        const err = await res.json();
-        status.innerText = err.detail || "Failed to update password";
-        status.style.color = "red";
-    }
+    msg.innerText = res.ok ? data.message : data.detail;
 }
