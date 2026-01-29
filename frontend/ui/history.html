@@ -4,7 +4,7 @@
     <title>Document History</title>
     <link rel="stylesheet" href="/ui/css/style.css">
 </head>
-<body onload="requireAuth()">
+<body onload="requireAuth(); loadHistory();">
 
     <h2>Document History</h2>
 
@@ -14,10 +14,20 @@
         <button class="danger" onclick="logout()">Logout</button>
     </div>
 
-    <div id="historyContent">
-        <!-- STEP B will load data here -->
-    </div>
+    <table border="1" width="100%" cellpadding="8">
+        <thead>
+            <tr>
+                <th>Document No</th>
+                <th>Title</th>
+                <th>Created By</th>
+                <th>Created At</th>
+                <th>Download</th>
+            </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+    </table>
 
     <script src="/ui/js/common.js"></script>
+    <script src="/ui/js/history.js"></script>
 </body>
 </html>
