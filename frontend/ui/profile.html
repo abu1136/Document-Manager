@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Profile</title>
-  <link rel="stylesheet" href="css/style.css">
+    <title>Profile</title>
+    <link rel="stylesheet" href="/ui/css/style.css">
 </head>
-<body>
+<body onload="requireAuth()">
 
-<button onclick="logout()">Logout</button>
+    <h2>My Profile</h2>
 
-<h2>Change Password</h2>
+    <div class="menu">
+        <button onclick="history.back()">Back</button>
+        <button onclick="goHistory()">History</button>
+        <button class="danger" onclick="logout()">Logout</button>
+    </div>
 
-<form id="pwdForm">
-  <input id="oldp" type="password" placeholder="Old Password" required>
-  <input id="newp" type="password" placeholder="New Password" required>
-  <button>Change</button>
-</form>
+    <div id="profileContent">
+        <!-- STEP C will handle password change -->
+    </div>
 
-<p id="msg"></p>
-
-<script src="js/profile.js"></script>
+    <script src="/ui/js/common.js"></script>
 </body>
 </html>
