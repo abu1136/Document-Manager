@@ -1,35 +1,39 @@
-from fastapi import APIRouter, Depends, Form, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
-from app.middleware.auth import get_current_user
+from app.database import get_db
 from app.models.user import User
-from app.utils.auth import verify, hash_pass
+from app.routers.auth import get_current_user
+from app.utils.security import verify_password, hash_password
 
-router = APIRouter(prefix="/profile", tags=["profile"])
+router = APIRouter(prefix="/profile", tags=["Profile"])
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.get("/me")
+def get_my_profile(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "role": current_user.role
+    }
 
 
 @router.post("/change-password")
 def change_password(
-    old_password: str = Form(...),
-    new_password: str = Form(...),
-    user=Depends(get_current_user),
-    db: Session = Depends(get_db)
+    data: PasswordChangeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    u = db.query(User).filter(User.id == user["user_id"]).first()
+    if not verify_password(data.current_password, current_user.password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
 
-    if not verify(old_password, u.password_hash):
-        raise HTTPException(status_code=400, detail="Old password incorrect")
-
-    u.password_hash = hash_pass(new_password)
+    current_user.password = hash_password(data.new_password)
     db.commit()
 
-    return {"status": "password_updated"}
+    return {"message": "Password updated successfully"}
