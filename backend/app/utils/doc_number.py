@@ -1,15 +1,39 @@
-from sqlalchemy import text
+from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from datetime import datetime
 
-def generate_doc_number(db):
+from app.models.document import Document
+
+
+PREFIX = "COMP/DOC"
+
+
+def generate_doc_number(db: Session) -> str:
+    """
+    Generates document number in format:
+    COMP/DOC/YYYY/000001
+
+    - Increments safely
+    - Resets every year
+    """
+
     year = datetime.now().year
-    res = db.execute(text("SELECT last_number FROM document_sequence WHERE year=:y"), {"y":year}).fetchone()
 
-    if not res:
-        db.execute(text("INSERT INTO document_sequence VALUES (:y,1)"), {"y":year})
-        seq = 1
+    # Get last document for current year
+    last_doc = (
+        db.query(Document)
+        .filter(Document.document_number.like(f"{PREFIX}/{year}/%"))
+        .order_by(desc(Document.document_number))
+        .first()
+    )
+
+    if not last_doc:
+        next_number = 1
     else:
-        seq = res[0] + 1
-        db.execute(text("UPDATE document_sequence SET last_number=:s WHERE year=:y"), {"s":seq,"y":year})
+        try:
+            last_seq = int(last_doc.document_number.split("/")[-1])
+            next_number = last_seq + 1
+        except Exception:
+            next_number = 1
 
-    return f"COMP/DOC/{year}/{seq:06d}"
+    return f"{PREFIX}/{year}/{next_number:06d}"
