@@ -1,25 +1,52 @@
-const token = localStorage.getItem("token");
-if (!token) location.href = "/ui/login.html";
+async function loadProfile() {
+    const token = getToken();
 
-const headers = { Authorization: "Bearer " + token };
+    const res = await fetch("/profile/me", {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    });
 
-function logout() {
-  localStorage.removeItem("token");
-  location.href = "/ui/login.html";
+    if (!res.ok) {
+        document.getElementById("status").innerText = "Failed to load profile";
+        return;
+    }
+
+    const data = await res.json();
+    document.getElementById("username").innerText = data.username;
+    document.getElementById("role").innerText = data.role;
 }
 
-document.getElementById("pwdForm").onsubmit = async e => {
-  e.preventDefault();
 
-  const res = await fetch("/profile/change-password", {
-    method: "POST",
-    headers,
-    body: new URLSearchParams({
-      old_password: oldp.value,
-      new_password: newp.value
-    })
-  });
+async function changePassword(event) {
+    event.preventDefault();
 
-  const data = await res.json();
-  msg.innerText = res.ok ? "Password updated" : data.detail;
-};
+    const token = getToken();
+    const currentPassword = document.getElementById("currentPassword").value;
+    const newPassword = document.getElementById("newPassword").value;
+
+    const res = await fetch("/profile/change-password", {
+        method: "POST",
+        headers: {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword
+        })
+    });
+
+    const status = document.getElementById("status");
+
+    if (res.ok) {
+        status.innerText = "Password updated successfully";
+        status.style.color = "green";
+        document.getElementById("currentPassword").value = "";
+        document.getElementById("newPassword").value = "";
+    } else {
+        const err = await res.json();
+        status.innerText = err.detail || "Failed to update password";
+        status.style.color = "red";
+    }
+}
