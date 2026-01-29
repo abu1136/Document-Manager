@@ -1,29 +1,39 @@
-const token = localStorage.getItem("token");
-if (!token) location.href = "/ui/login.html";
+async function loadHistory() {
+    const token = getToken();
+    const tbody = document.getElementById("historyBody");
 
-const headers = { Authorization: "Bearer " + token };
+    const res = await fetch("/documents/history", {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    });
 
-function logout() {
-  localStorage.removeItem("token");
-  location.href = "/ui/login.html";
+    if (!res.ok) {
+        tbody.innerHTML = "<tr><td colspan='5'>Failed to load history</td></tr>";
+        return;
+    }
+
+    const docs = await res.json();
+    tbody.innerHTML = "";
+
+    if (docs.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5'>No documents found</td></tr>";
+        return;
+    }
+
+    docs.forEach(d => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${d.document_number}</td>
+            <td>${d.title}</td>
+            <td>${d.created_by}</td>
+            <td>${new Date(d.created_at).toLocaleString()}</td>
+            <td>
+                ${d.pdf_url ? `<a href="${d.pdf_url}" target="_blank">Download</a>` : "N/A"}
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
 }
-
-async function load() {
-  const q = document.getElementById("q").value;
-  const res = await fetch(`/documents/history?q=${q}`, { headers });
-  const data = await res.json();
-
-  rows.innerHTML = "";
-  data.forEach(d => {
-    rows.innerHTML += `
-      <tr>
-        <td>${d.document_number}</td>
-        <td>${d.title}</td>
-        <td>${new Date(d.created_at).toLocaleString()}</td>
-        <td><a href="/${d.pdf_path}" target="_blank">PDF</a></td>
-        <td>${d.docx_path ? `<a href="/${d.docx_path}">DOCX</a>` : "-"}</td>
-      </tr>`;
-  });
-}
-
-load();
