@@ -10,5 +10,12 @@ app.include_router(auth.router)
 app.include_router(documents.router)
 app.include_router(admin.router)
 
-# Serve UI
-app.mount("/ui", StaticFiles(directory="frontend/ui", html=True), name="ui")
+# Serve generated documents
+app.mount("/files", StaticFiles(directory="files"), name="files")
+
+# Serve frontend UI
+app.mount(
+    "/ui",
+    StaticFiles(directory="frontend/ui", html=True),
+    name="ui"
+)
