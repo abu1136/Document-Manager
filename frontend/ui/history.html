@@ -14,6 +14,19 @@
         <button class="danger" onclick="logout()">Logout</button>
     </div>
 
+    <hr>
+
+    <div>
+        <input type="text" id="docNo" placeholder="Document Number">
+        <input type="text" id="createdBy" placeholder="Created By (admin only)">
+        <input type="date" id="dateFrom">
+        <input type="date" id="dateTo">
+        <button onclick="loadHistory()">Search</button>
+        <button onclick="clearFilters()">Clear</button>
+    </div>
+
+    <br>
+
     <table border="1" width="100%" cellpadding="8">
         <thead>
             <tr>
