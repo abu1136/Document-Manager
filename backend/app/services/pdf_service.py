@@ -1,32 +1,44 @@
-import fitz
-from reportlab.pdfgen import canvas
+import fitz  # PyMuPDF
 from reportlab.lib.pagesizes import A4
-from sqlalchemy.orm import Session
-from app.models.letterhead import Letterhead
+from reportlab.pdfgen import canvas
+import tempfile
+import os
 
-def generate_pdf(db: Session, text: str, output: str):
-    lh = db.query(Letterhead).filter(Letterhead.active == True).first()
-    if not lh:
-        raise RuntimeError("No active letterhead uploaded")
 
-    path = f"app/assets/letterhead/{lh.filename}"
+def generate_pdf(letterhead_path: str, content: str, output_path: str):
+    """
+    Generate a PDF using a letterhead PDF/image as background
+    and overlay the document content text.
+    """
 
-    if lh.filetype == "pdf":
-        base = fitz.open(path)
-        page = base[0]
-        rect = page.rect
+    # Create a temporary PDF with the content text
+    fd, temp_pdf = tempfile.mkstemp(suffix=".pdf")
+    os.close(fd)
 
-        temp = "overlay.pdf"
-        c = canvas.Canvas(temp, pagesize=(rect.width, rect.height))
-        c.drawString(50, rect.height - 200, text)
-        c.save()
+    c = canvas.Canvas(temp_pdf, pagesize=A4)
+    width, height = A4
 
-        overlay = fitz.open(temp)
-        page.show_pdf_page(rect, overlay, 0)
-        base.save(output)
+    text = c.beginText(50, height - 150)
+    for line in content.splitlines():
+        text.textLine(line)
 
-    else:
-        c = canvas.Canvas(output, pagesize=A4)
-        c.drawImage(path, 0, 0, width=A4[0], height=A4[1])
-        c.drawString(50, A4[1] - 200, text)
-        c.save()
+    c.drawText(text)
+    c.showPage()
+    c.save()
+
+    # Merge letterhead + content
+    base = fitz.open(letterhead_path)
+    overlay = fitz.open(temp_pdf)
+
+    base_page = base[0]
+    base_page.show_pdf_page(
+        base_page.rect,
+        overlay,
+        0
+    )
+
+    base.save(output_path)
+    base.close()
+    overlay.close()
+
+    os.remove(temp_pdf)
