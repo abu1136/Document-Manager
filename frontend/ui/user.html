@@ -4,18 +4,20 @@
     <title>User Dashboard</title>
     <link rel="stylesheet" href="/ui/css/style.css">
 </head>
-<body>
+<body onload="requireAuth()">
+
     <h2>User Dashboard</h2>
 
     <div class="menu">
-        <button onclick="goCreate()">Create Document</button>
+        <button onclick="window.location.href='/ui/user_create.html'">
+            Create Document
+        </button>
+
         <button onclick="goHistory()">History</button>
         <button onclick="goProfile()">Profile</button>
         <button class="danger" onclick="logout()">Logout</button>
     </div>
 
-    <div id="content"></div>
-
-    <script src="/ui/js/user.js"></script>
+    <script src="/ui/js/common.js"></script>
 </body>
 </html>
