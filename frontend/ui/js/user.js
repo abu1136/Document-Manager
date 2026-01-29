@@ -21,15 +21,21 @@ document.getElementById("docForm").onsubmit = async e => {
     })
   });
 
-  const data = await res.json();
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    msg.innerText = "Server error while generating document";
+    return;
+  }
 
   if (!res.ok) {
-    msg.innerText = "Failed to generate document";
+    msg.innerText = data.detail || "Document generation failed";
     return;
   }
 
   msg.innerText = "Document created successfully";
-  document.getElementById("downloads").style.display = "block";
+  downloads.style.display = "block";
 
   pdfLink.href = "/" + data.pdf;
 
