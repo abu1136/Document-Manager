@@ -1,31 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Document History</title>
-  <link rel="stylesheet" href="css/style.css">
+    <title>Document History</title>
+    <link rel="stylesheet" href="/ui/css/style.css">
 </head>
-<body>
+<body onload="requireAuth()">
 
-<button onclick="logout()">Logout</button>
+    <h2>Document History</h2>
 
-<h2>Document History</h2>
+    <div class="menu">
+        <button onclick="history.back()">Back</button>
+        <button onclick="goProfile()">Profile</button>
+        <button class="danger" onclick="logout()">Logout</button>
+    </div>
 
-<input id="q" placeholder="Search document ID">
-<button onclick="load()">Search</button>
+    <div id="historyContent">
+        <!-- STEP B will load data here -->
+    </div>
 
-<table border="1" cellpadding="8">
-  <thead>
-    <tr>
-      <th>Document ID</th>
-      <th>Title</th>
-      <th>Date</th>
-      <th>PDF</th>
-      <th>DOCX</th>
-    </tr>
-  </thead>
-  <tbody id="rows"></tbody>
-</table>
-
-<script src="js/history.js"></script>
+    <script src="/ui/js/common.js"></script>
 </body>
 </html>
