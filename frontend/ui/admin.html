@@ -4,20 +4,21 @@
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="/ui/css/style.css">
 </head>
-<body>
+<body onload="requireAuth()">
+
     <h2>Admin Dashboard</h2>
 
     <div class="menu">
-        <button onclick="goAdminHome()">Dashboard</button>
-        <button onclick="goUsers()">Users</button>
-        <button onclick="goLetterhead()">Letterhead</button>
+        <button onclick="window.location.href='/ui/admin.html'">Dashboard</button>
+        <button onclick="window.location.href='/ui/users.html'">Users</button>
+        <button onclick="window.location.href='/ui/letterhead.html'">Letterhead</button>
+
         <button onclick="goHistory()">History</button>
         <button onclick="goProfile()">Profile</button>
+
         <button class="danger" onclick="logout()">Logout</button>
     </div>
 
-    <div id="content"></div>
-
-    <script src="/ui/js/admin.js"></script>
+    <script src="/ui/js/common.js"></script>
 </body>
 </html>
