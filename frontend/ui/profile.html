@@ -4,34 +4,29 @@
     <title>My Profile</title>
     <link rel="stylesheet" href="/ui/css/style.css">
 </head>
-<body onload="requireAuth(); loadProfile();">
+<body onload="requireAuth()">
 
-    <h2>My Profile</h2>
+<h2>My Profile</h2>
 
-    <div class="menu">
-        <button onclick="history.back()">Back</button>
-        <button onclick="goHistory()">History</button>
-        <button class="danger" onclick="logout()">Logout</button>
-    </div>
+<div class="menu">
+    <button onclick="goDashboard()">Dashboard</button>
+    <button class="danger" onclick="logout()">Logout</button>
+</div>
 
-    <div>
-        <p><b>Username:</b> <span id="username"></span></p>
-        <p><b>Role:</b> <span id="role"></span></p>
-    </div>
+<hr>
 
-    <hr>
+<h3>Change Password</h3>
 
-    <h3>Change Password</h3>
+<form onsubmit="changePassword(event)">
+    <input type="password" id="currentPassword" placeholder="Current Password" required>
+    <input type="password" id="newPassword" placeholder="New Password" required>
+    <button type="submit">Update Password</button>
+</form>
 
-    <form onsubmit="changePassword(event)">
-        <input type="password" id="currentPassword" placeholder="Current Password" required><br><br>
-        <input type="password" id="newPassword" placeholder="New Password" required><br><br>
-        <button type="submit">Update Password</button>
-    </form>
+<p id="msg"></p>
 
-    <p id="status"></p>
+<script src="/ui/js/common.js"></script>
+<script src="/ui/js/profile.js"></script>
 
-    <script src="/ui/js/common.js"></script>
-    <script src="/ui/js/profile.js"></script>
 </body>
 </html>
