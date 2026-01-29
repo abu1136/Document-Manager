@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
 from app.middleware.auth import get_current_user
-from app.utils.doc_number import generate_doc_number
+from app.models.letterhead import Letterhead
 from app.services.pdf_service import generate_pdf
 from app.services.docx_service import generate_docx
+from app.utils.doc_number import generate_doc_number
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -26,17 +27,38 @@ def create_document(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Ensure output directory exists
+    # Check active letterhead
+    letterhead = (
+        db.query(Letterhead)
+        .filter(Letterhead.active == True)
+        .first()
+    )
+
+    if not letterhead:
+        raise HTTPException(
+            status_code=400,
+            detail="No active letterhead configured. Contact admin."
+        )
+
+    letterhead_path = os.path.join(
+        "app/assets/letterhead",
+        letterhead.filename
+    )
+
+    if not os.path.exists(letterhead_path):
+        raise HTTPException(
+            status_code=500,
+            detail="Letterhead file missing on server"
+        )
+
+    # Ensure output dir
     os.makedirs("files", exist_ok=True)
 
-    # Generate document number
     doc_no = generate_doc_number(db)
 
-    # Generate PDF (always)
     pdf_path = f"files/{doc_no}.pdf"
-    generate_pdf(db, content, pdf_path)
+    generate_pdf(letterhead_path, content, pdf_path)
 
-    # Generate DOCX only for admin
     docx_path = None
     if user["role"] == "admin":
         docx_path = f"files/{doc_no}.docx"
