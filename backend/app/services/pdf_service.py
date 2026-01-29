@@ -11,6 +11,9 @@ def generate_pdf(letterhead_path: str, content: str, output_path: str):
     and overlay the document content text.
     """
 
+    # Ensure output directory exists
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
     # Create a temporary PDF with the content text
     fd, temp_pdf = tempfile.mkstemp(suffix=".pdf")
     os.close(fd)
