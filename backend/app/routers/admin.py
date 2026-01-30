@@ -1,41 +1,56 @@
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlalchemy.orm import Session
 import os
 import shutil
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 
-from app.database import SessionLocal
-from app.middleware.auth import get_current_user
+from app.database import get_db
 from app.models.user import User
 from app.models.letterhead import Letterhead
-from app.utils.auth import hash_pass
+from app.routers.auth import get_current_user
+from app.utils.security import hash_password
 
-UPLOAD_DIR = "app/assets/letterhead"
-
-router = APIRouter(prefix="/admin", tags=["admin"])
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
-def require_admin(user):
-    if user["role"] != "admin":
+# ===============================
+# CREATE USER
+# ===============================
+@router.post("/create-user")
+def create_user(
+    username: str,
+    password: str,
+    role: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
 
+    if db.query(User).filter(User.username == username).first():
+        raise HTTPException(status_code=400, detail="Username already exists")
 
-# ===================== USERS =====================
+    user = User(
+        username=username,
+        password=hash_password(password),
+        role=role
+    )
+    db.add(user)
+    db.commit()
 
+    return {"message": "User created successfully"}
+
+
+# ===============================
+# LIST USERS
+# ===============================
 @router.get("/users")
 def list_users(
-    user=Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    require_admin(user)
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
     users = db.query(User).all()
     return [
         {"id": u.id, "username": u.username, "role": u.role}
@@ -43,67 +58,57 @@ def list_users(
     ]
 
 
-@router.post("/users")
-def create_user(
-    username: str = Form(...),
-    password: str = Form(...),
-    role: str = Form(...),
-    user=Depends(get_current_user),
-    db: Session = Depends(get_db)
+# ===============================
+# RESET USER PASSWORD (STEP E – PART 2)
+# ===============================
+@router.post("/reset-password")
+def reset_user_password(
+    user_id: int,
+    new_password: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    require_admin(user)
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
 
-    if role not in ("admin", "user"):
-        raise HTTPException(status_code=400, detail="Invalid role")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    try:
-        new_user = User(
-            username=username,
-            password_hash=hash_pass(password),
-            role=role
-        )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+    user.password = hash_password(new_password)
+    db.commit()
 
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Username already exists")
-
-    return {"status": "user_created"}
+    return {"message": f"Password reset for user '{user.username}'"}
 
 
-# ===================== LETTERHEAD =====================
-
+# ===============================
+# UPLOAD LETTERHEAD
+# ===============================
 @router.post("/letterhead")
 def upload_letterhead(
     file: UploadFile = File(...),
-    user=Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    require_admin(user)
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
 
-    ext = file.filename.split(".")[-1].lower()
-    if ext not in ("pdf", "png", "jpg", "jpeg"):
-        raise HTTPException(status_code=400, detail="Unsupported file type")
+    upload_dir = "files/letterhead"
+    os.makedirs(upload_dir, exist_ok=True)
 
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    filename = f"letterhead.{ext}"
-    path = os.path.join(UPLOAD_DIR, filename)
+    file_path = os.path.join(upload_dir, file.filename)
 
-    with open(path, "wb") as buffer:
+    with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    # deactivate old letterheads
     db.query(Letterhead).update({"active": False})
 
-    lh = Letterhead(
-        filename=filename,
-        filetype="pdf" if ext == "pdf" else "image",
-        uploaded_by=user["user_id"],
+    letterhead = Letterhead(
+        file_path=file_path,
         active=True
     )
-
-    db.add(lh)
+    db.add(letterhead)
     db.commit()
 
-    return {"status": "letterhead_uploaded"}
+    return {"message": "Letterhead uploaded successfully"}
