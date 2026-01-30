@@ -1,27 +1,30 @@
-document.getElementById("loginForm").onsubmit = async (e) => {
-    e.preventDefault();
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-    const res = await fetch("/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            username: username.value,
-            password: password.value
-        })
-    });
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
 
-    const data = await res.json();
+  const formData = new FormData();
+  formData.append("username", username);
+  formData.append("password", password);
 
-    if (!res.ok) {
-        document.getElementById("error").innerText = data.detail;
-        return;
-    }
+  const res = await fetch("/auth/login", {
+    method: "POST",
+    body: formData
+  });
 
-    localStorage.setItem("token", data.token);
+  const data = await res.json();
 
-    if (data.role === "admin") {
-        window.location = "/ui/admin.html";
-    } else {
-        window.location = "/ui/user.html";
-    }
-};
+  if (!res.ok) {
+    alert(data.detail || "Login failed");
+    return;
+  }
+
+  localStorage.setItem("token", data.access_token);
+
+  if (data.role === "admin") {
+    window.location.href = "/ui/admin.html";
+  } else {
+    window.location.href = "/ui/user.html";
+  }
+});
