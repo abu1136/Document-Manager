@@ -1,93 +1,48 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-import os
-
+from passlib.context import CryptContext
+import jwt
+import datetime
 from app.database import get_db
-from app.models.user import User
-from app.utils.security import verify_password
+from app.models import User
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
-
-
-# ===============================
-# CONFIG
-# ===============================
-SECRET_KEY = os.getenv("SECRET_KEY", "change-this-secret-key")
+SECRET_KEY = "CHANGE_ME"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 12  # 12 hours
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+router = APIRouter()
 
-# ===============================
-# TOKEN CREATION
-# ===============================
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (
-        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+def verify_password(plain, hashed):
+    return pwd_context.verify(plain, hashed)
 
+def get_password_hash(password):
+    return pwd_context.hash(password)
 
-# ===============================
-# LOGIN ENDPOINT
-# ===============================
-@router.post("/login")
-def login(
-    username: str,
-    password: str,
-    db: Session = Depends(get_db)
-):
-    user = db.query(User).filter(User.username == username).first()
-
-    if not user or not verify_password(password, user.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password"
-        )
-
-    access_token = create_access_token(
-        data={
-            "sub": str(user.id),
-            "role": user.role
-        }
-    )
-
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "role": user.role
-    }
-
-
-# ===============================
-# CURRENT USER DEPENDENCY
-# ===============================
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
-) -> User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials"
-    )
+def get_current_user(token: str = Depends(lambda: None), db: Session = Depends(get_db)):
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str | None = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
-    user = db.query(User).filter(User.id == int(user_id)).first()
-    if user is None:
-        raise credentials_exception
-
+    user = db.query(User).filter(User.id == payload["sub"]).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
     return user
+
+@router.post("/login")
+def login(data: dict, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == data["username"]).first()
+    if not user or not verify_password(data["password"], user.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = jwt.encode({
+        "sub": user.id,
+        "role": user.role,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+    }, SECRET_KEY, algorithm=ALGORITHM)
+
+    return {"token": token, "role": user.role}
