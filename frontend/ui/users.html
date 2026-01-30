@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Management</title>
+    <link rel="stylesheet" href="/ui/css/style.css">
+</head>
+<body onload="requireAuth(); loadUsers();">
+
+<h2>User Management</h2>
+
+<div class="menu">
+    <button onclick="goAdmin()">Admin Dashboard</button>
+    <button class="danger" onclick="logout()">Logout</button>
+</div>
+
+<hr>
+
+<h3>Create User</h3>
+<form onsubmit="createUser(event)">
+    <input type="text" id="newUsername" placeholder="Username" required>
+    <input type="password" id="newPassword" placeholder="Password" required>
+    <select id="newRole">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+    </select>
+    <button type="submit">Create</button>
+</form>
+
+<p id="createUserMsg"></p>
+
+<hr>
+
+<h3>Existing Users</h3>
+<table border="1" width="100%" cellpadding="6">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Role</th>
+        </tr>
+    </thead>
+    <tbody id="userTableBody"></tbody>
+</table>
+
+<hr>
+
+<h3>Reset User Password</h3>
+<input type="number" id="resetUserId" placeholder="User ID">
+<input type="password" id="resetPassword" placeholder="New Password">
+<button onclick="resetUserPassword()">Reset</button>
+
+<p id="resetMsg"></p>
+
+<script src="/ui/js/common.js"></script>
+<script src="/ui/js/admin.js"></script>
+
+</body>
+</html>
