@@ -1,79 +1,79 @@
-from fastapi import APIRouter, Depends, HTTPException, Form
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timedelta
+import jwt
+import os
 
-from app.database import SessionLocal
+from app.database import get_db
 from app.models.user import User
-from app.utils.auth import hash_pass, verify, create_token
+from app.utils.security import verify_password
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
+# ===============================
+# CONFIG
+# ===============================
+SECRET_KEY = os.getenv("SECRET_KEY", "change-this-secret")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 12
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@router.get("/setup/status")
-def setup_status(db: Session = Depends(get_db)):
-    admin_exists = db.query(User).filter(User.role == "admin").count() > 0
-    return {"setup_required": not admin_exists}
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-@router.post("/setup")
-def setup_admin(
-    username: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    # Check if admin already exists
-    if db.query(User).filter(User.role == "admin").count() > 0:
-        raise HTTPException(status_code=403, detail="Admin already configured")
-
-    if len(password) < 8:
-        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-
-    try:
-        admin = User(
-            username=username,
-            password_hash=hash_pass(password),
-            role="admin"
-        )
-        db.add(admin)
-        db.commit()
-        db.refresh(admin)
-
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Username already exists")
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Setup failed: {str(e)}")
-
-    return {"status": "admin_created"}
+# ===============================
+# TOKEN UTILS
+# ===============================
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+# ===============================
+# LOGIN
+# ===============================
 @router.post("/login")
 def login(
-    username: str = Form(...),
-    password: str = Form(...),
+    username: str,
+    password: str,
     db: Session = Depends(get_db)
 ):
     user = db.query(User).filter(User.username == username).first()
 
-    if not user or not verify(password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user or not verify_password(password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
 
-    token = create_token({
-        "user_id": user.id,
+    token = create_access_token({
+        "sub": str(user.id),
         "role": user.role
     })
 
     return {
         "access_token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "role": user.role
     }
+
+
+# ===============================
+# CURRENT USER DEPENDENCY
+# ===============================
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> User:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return user
