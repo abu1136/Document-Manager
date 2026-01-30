@@ -1,18 +1,27 @@
-async function checkSetupStatus() {
-  const res = await fetch("/auth/setup/status");
-  const data = await res.json();
+document.getElementById("loginForm").onsubmit = async (e) => {
+    e.preventDefault();
 
-  if (!data.setup_required) {
-    location.href = "/ui/login.html";
-  }
-}
+    const res = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            username: username.value,
+            password: password.value
+        })
+    });
 
-function getToken() {
-  return localStorage.getItem("token");
-}
+    const data = await res.json();
 
-function authHeader() {
-  return {
-    "Authorization": "Bearer " + getToken()
-  };
-}
+    if (!res.ok) {
+        document.getElementById("error").innerText = data.detail;
+        return;
+    }
+
+    localStorage.setItem("token", data.token);
+
+    if (data.role === "admin") {
+        window.location = "/ui/admin.html";
+    } else {
+        window.location = "/ui/user.html";
+    }
+};
