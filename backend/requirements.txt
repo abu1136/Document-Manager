@@ -9,3 +9,4 @@ reportlab
 PyMuPDF
 python-docx
 cryptography
+python-jose[cryptography]
