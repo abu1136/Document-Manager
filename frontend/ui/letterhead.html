@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Letterhead Management</title>
+    <link rel="stylesheet" href="/ui/css/style.css">
+</head>
+<body onload="requireAuth()">
+
+<h2>Letterhead Management</h2>
+
+<div class="menu">
+    <button onclick="goAdmin()">Admin Dashboard</button>
+    <button class="danger" onclick="logout()">Logout</button>
+</div>
+
+<hr>
+
+<h3>Upload New Letterhead (PDF)</h3>
+
+<input type="file" id="letterheadFile" accept="application/pdf">
+<button onclick="uploadLetterhead()">Upload</button>
+
+<p id="letterheadMsg"></p>
+
+<script src="/ui/js/common.js"></script>
+<script src="/ui/js/letterhead.js"></script>
+
+</body>
+</html>
