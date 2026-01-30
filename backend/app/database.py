@@ -5,7 +5,7 @@ import time
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "mysql+pymysql://docuser:docpass@document-manager-mysql:3306/document_manager"
+    "mysql+pymysql://docuser:docpass@mysql:3306/document_manager"
 )
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
