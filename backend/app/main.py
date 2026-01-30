@@ -1,82 +1,49 @@
-import time
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
-from sqlalchemy.exc import OperationalError
+from fastapi.responses import FileResponse
 
-from app.database import Base, engine
-from app.utils.schema_migrate import ensure_column
-
-# Import models
-from app.models.user import User
-from app.models.letterhead import Letterhead
-from app.models.document import Document
-
-# Routers
+from app.database import engine, Base
 from app.routers import auth, documents, admin, profile
+
+import os
 
 app = FastAPI(title="Document Manager")
 
 
+# ===============================
+# STARTUP – AUTO DB MIGRATION
+# ===============================
 @app.on_event("startup")
 def startup():
-    # -----------------------------
-    # Wait for DB
-    # -----------------------------
-    for i in range(10):
-        try:
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            break
-        except OperationalError:
-            print(f"Waiting for database... ({i+1}/10)")
-            time.sleep(2)
-    else:
-        raise RuntimeError("Database not reachable")
-
-    # -----------------------------
-    # Create missing tables
-    # -----------------------------
     Base.metadata.create_all(bind=engine)
-
-    # -----------------------------
-    # Safe column migrations
-    # -----------------------------
-    ensure_column(
-        engine,
-        table="documents",
-        column="pdf_path",
-        ddl="ALTER TABLE documents ADD COLUMN pdf_path VARCHAR(255)"
-    )
-
-    ensure_column(
-        engine,
-        table="documents",
-        column="docx_path",
-        ddl="ALTER TABLE documents ADD COLUMN docx_path VARCHAR(255)"
-    )
-
-    ensure_column(
-        engine,
-        table="documents",
-        column="created_by",
-        ddl="ALTER TABLE documents ADD COLUMN created_by INT"
-    )
-
-    ensure_column(
-        engine,
-        table="documents",
-        column="created_at",
-        ddl="ALTER TABLE documents ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
-    )
+    os.makedirs("files", exist_ok=True)
+    os.makedirs("files/letterhead", exist_ok=True)
+    os.makedirs("files/COMP/DOC", exist_ok=True)
 
 
-# Routers
+# ===============================
+# ROUTERS
+# ===============================
 app.include_router(auth.router)
 app.include_router(documents.router)
 app.include_router(admin.router)
 app.include_router(profile.router)
 
-# Static files
-app.mount("/files", StaticFiles(directory="files"), name="files")
+
+# ===============================
+# STATIC UI
+# ===============================
 app.mount("/ui", StaticFiles(directory="frontend/ui", html=True), name="ui")
+
+
+# ===============================
+# FILE DOWNLOADS
+# ===============================
+@app.get("/files/{file_path:path}")
+def download_file(file_path: str):
+    full_path = os.path.join("files", file_path)
+
+    if not os.path.exists(full_path):
+        return {"error": "File not found"}
+
+    return FileResponse(full_path, filename=os.path.basename(full_path))
