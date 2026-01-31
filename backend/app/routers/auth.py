@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Form
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 import jwt
-import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from app.database import get_db
 from app.models import User
@@ -45,7 +45,7 @@ def login(username: str = Form(...), password: str = Form(...), db: Session = De
     token = jwt.encode({
         "sub": user.id,
         "role": user.role,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+        "exp": datetime.now(timezone.utc) + timedelta(hours=8)
     }, SECRET_KEY, algorithm=ALGORITHM)
 
     return {"access_token": token, "role": user.role, "username": user.username}
