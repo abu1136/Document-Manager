@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Form
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 import jwt
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from app.database import get_db
 from app.models import User
 
-SECRET_KEY = "CHANGE_ME"
+SECRET_KEY = os.getenv("JWT_SECRET", "CHANGE_ME_INSECURE_DEFAULT")
 ALGORITHM = "HS256"
 TOKEN_EXPIRY_HOURS = 8
 

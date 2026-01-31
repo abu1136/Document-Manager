@@ -75,8 +75,10 @@ mysql -u root -p < ../sql/init.sql
 3. Configure environment variables:
 ```bash
 export DATABASE_URL="mysql+pymysql://docuser:docpass@localhost:3306/document_manager"
-export JWT_SECRET="your-secret-key"
+export JWT_SECRET="your-secret-key-min-32-chars-recommended"
 ```
+
+**Important:** Use a strong JWT_SECRET (minimum 32 characters recommended) for production. The default in docker-compose.yml is only for development.
 
 4. Run the application:
 ```bash
@@ -196,6 +198,17 @@ mysql -u root -p < sql/init.sql
 ```
 
 ### Other Common Issues
+
+**401 Unauthorized when accessing admin endpoints:**
+- Ensure JWT_SECRET environment variable is set and matches between login and subsequent requests
+- The application will use the JWT_SECRET from docker-compose.yml (default: `supersecret_change_in_production_min32chars`)
+- After changing JWT_SECRET, restart the containers: `docker-compose restart backend`
+- Clear browser localStorage and login again
+
+**JWT Key Length Warning:**
+- If you see "HMAC key is X bytes long, which is below the minimum recommended length of 32 bytes"
+- Update JWT_SECRET in docker-compose.yml to be at least 32 characters
+- Restart containers: `docker-compose restart backend`
 
 **Database Connection Errors:**
 - Ensure MySQL is running

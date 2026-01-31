@@ -16,7 +16,8 @@ services:
       DB_USER: docuser
       DB_PASS: docpass
       DB_NAME: document_manager
-      JWT_SECRET: supersecret
+      # IMPORTANT: Change this to a strong secret (min 32 chars) in production
+      JWT_SECRET: supersecret_change_in_production_min32chars
     volumes:
       - ./files:/app/files
       - ./backend/app/assets/letterhead:/app/app/assets/letterhead
