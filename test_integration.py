@@ -79,7 +79,7 @@ def test_jwt_functions():
     try:
         from app.routers.auth import get_password_hash
         import jwt
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
         
         # Test password hash generation
         hashed = get_password_hash("testpass")
@@ -90,7 +90,7 @@ def test_jwt_functions():
         payload = {
             "sub": 1,
             "role": "admin",
-            "exp": datetime.utcnow() + timedelta(hours=1)
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1)
         }
         token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
         

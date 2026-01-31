@@ -38,7 +38,7 @@ def create_document(
     doc_number = generate_doc_number(db)
     
     # Get active letterhead
-    letterhead = db.query(Letterhead).filter(Letterhead.active == True).first()
+    letterhead = db.query(Letterhead).filter(Letterhead.active.is_(True)).first()
     if not letterhead:
         raise HTTPException(status_code=400, detail="No active letterhead found. Please upload a letterhead first.")
     

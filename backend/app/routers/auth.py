@@ -9,6 +9,7 @@ from app.models import User
 
 SECRET_KEY = "CHANGE_ME"
 ALGORITHM = "HS256"
+TOKEN_EXPIRY_HOURS = 8
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -45,7 +46,7 @@ def login(username: str = Form(...), password: str = Form(...), db: Session = De
     token = jwt.encode({
         "sub": user.id,
         "role": user.role,
-        "exp": datetime.now(timezone.utc) + timedelta(hours=8)
+        "exp": datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRY_HOURS)
     }, SECRET_KEY, algorithm=ALGORITHM)
 
     return {"access_token": token, "role": user.role, "username": user.username}
