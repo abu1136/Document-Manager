@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, Form
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
-import jwt
+from jose import jwt, JWTError
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -30,10 +30,10 @@ def get_current_user(authorization: Optional[str] = Header(None), db: Session = 
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except jwt.PyJWTError:
+    except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    user = db.query(User).filter(User.id == payload["sub"]).first()
+    user = db.query(User).filter(User.id == payload.get("sub")).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
@@ -44,10 +44,12 @@ def login(username: str = Form(...), password: str = Form(...), db: Session = De
     if not user or not verify_password(password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    # Create token using python-jose, with numeric exp (unix timestamp)
+    exp_ts = int((datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRY_HOURS)).timestamp())
     token = jwt.encode({
         "sub": user.id,
         "role": user.role,
-        "exp": datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRY_HOURS)
+        "exp": exp_ts
     }, SECRET_KEY, algorithm=ALGORITHM)
 
     return {"access_token": token, "role": user.role, "username": user.username}
