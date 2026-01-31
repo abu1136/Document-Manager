@@ -44,7 +44,7 @@ def login(username: str = Form(...), password: str = Form(...), db: Session = De
     if not user or not verify_password(password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # Create token using python-jose, with numeric exp (unix timestamp)
+    # Create token using python-jose (numeric exp timestamp)
     exp_ts = int((datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRY_HOURS)).timestamp())
     token = jwt.encode({
         "sub": user.id,
