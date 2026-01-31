@@ -41,6 +41,13 @@ cd Document-Manager
 docker-compose up -d
 ```
 
+   **If updating from a previous version:**
+   ```bash
+   docker-compose down
+   docker-compose build --no-cache
+   docker-compose up -d
+   ```
+
 3. **IMPORTANT - Database Migration (if upgrading from older version):**
    
    If you're upgrading from an older version and getting errors when creating users, you need to run the database migration:
@@ -198,6 +205,13 @@ mysql -u root -p < sql/init.sql
 ```
 
 ### Other Common Issues
+
+**401 Unauthorized after code update:**
+- You must **rebuild** the Docker container, not just restart it
+- Run: `docker-compose down && docker-compose build --no-cache && docker-compose up -d`
+- Clear browser localStorage (F12 → Application → Local Storage → Clear)
+- Login again
+- See `QUICK_FIX_401.md` for detailed steps
 
 **401 Unauthorized when accessing admin endpoints:**
 - Ensure JWT_SECRET environment variable is set and matches between login and subsequent requests
