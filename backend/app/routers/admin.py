@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 import os
 import shutil
@@ -9,7 +9,7 @@ from app.models.letterhead import Letterhead
 from app.routers.auth import get_current_user
 from app.utils.security import hash_password
 
-router = APIRouter(prefix="/admin", tags=["Admin"])
+router = APIRouter()
 
 
 # ===============================
@@ -17,9 +17,9 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 # ===============================
 @router.post("/create-user")
 def create_user(
-    username: str,
-    password: str,
-    role: str,
+    username: str = Form(...),
+    password: str = Form(...),
+    role: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -63,8 +63,8 @@ def list_users(
 # ===============================
 @router.post("/reset-password")
 def reset_user_password(
-    user_id: int,
-    new_password: str,
+    user_id: int = Form(...),
+    new_password: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -104,8 +104,13 @@ def upload_letterhead(
     # deactivate old letterheads
     db.query(Letterhead).update({"active": False})
 
+    # Determine file type
+    file_type = "pdf" if file.filename.lower().endswith('.pdf') else "image"
+
     letterhead = Letterhead(
-        file_path=file_path,
+        filename=file.filename,
+        filetype=file_type,
+        uploaded_by=current_user.id,
         active=True
     )
     db.add(letterhead)

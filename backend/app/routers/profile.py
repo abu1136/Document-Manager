@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Form
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -6,13 +6,13 @@ from app.models.user import User
 from app.routers.auth import get_current_user
 from app.utils.security import verify_password, hash_password
 
-router = APIRouter(prefix="/profile", tags=["Profile"])
+router = APIRouter()
 
 
 @router.post("/change-password")
 def change_password(
-    current_password: str,
-    new_password: str,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

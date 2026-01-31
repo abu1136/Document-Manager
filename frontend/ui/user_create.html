@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Document</title>
+    <link rel="stylesheet" href="/ui/css/style.css">
+    <style>
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            font-family: Arial, sans-serif;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        input[type="text"] {
+            width: 100%;
+        }
+    </style>
+</head>
+<body onload="requireAuth()">
+
+<h2>Create New Document</h2>
+
+<div class="menu">
+    <button onclick="window.location.href='/ui/user.html'">Back to Dashboard</button>
+    <button onclick="goHistory()">History</button>
+    <button onclick="goProfile()">Profile</button>
+    <button class="danger" onclick="logout()">Logout</button>
+</div>
+
+<hr>
+
+<form onsubmit="createDocument(event)">
+    <label for="title">Document Title:</label>
+    <input type="text" id="title" placeholder="Enter document title" required>
+    
+    <label for="content">Document Content:</label>
+    <textarea id="content" placeholder="Enter document content here..." required></textarea>
+    
+    <button type="submit">Generate Document</button>
+</form>
+
+<p id="msg"></p>
+
+<div id="downloadLinks" style="display:none; margin-top: 20px;">
+    <h3>Document Created Successfully!</h3>
+    <p><strong>Document Number:</strong> <span id="docNumber"></span></p>
+    <p>
+        <a id="pdfLink" href="#" target="_blank">Download PDF</a> | 
+        <a id="docxLink" href="#" target="_blank">Download DOCX</a>
+    </p>
+</div>
+
+<script src="/ui/js/common.js"></script>
+<script>
+async function createDocument(e) {
+    e.preventDefault();
+
+    const token = getToken();
+    const title = document.getElementById("title").value;
+    const content = document.getElementById("content").value;
+    const msg = document.getElementById("msg");
+    const downloadLinks = document.getElementById("downloadLinks");
+
+    msg.innerText = "Creating document...";
+    downloadLinks.style.display = "none";
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", content);
+
+    const res = await fetch("/documents/create", {
+        method: "POST",
+        headers: {
+            "Authorization": "Bearer " + token
+        },
+        body: formData
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        msg.innerText = "Error: " + (data.detail || "Failed to create document");
+        return;
+    }
+
+    msg.innerText = data.message;
+    
+    // Show download links
+    document.getElementById("docNumber").innerText = data.document_number;
+    document.getElementById("pdfLink").href = data.pdf_url;
+    document.getElementById("docxLink").href = data.docx_url;
+    downloadLinks.style.display = "block";
+
+    // Clear form
+    document.getElementById("title").value = "";
+    document.getElementById("content").value = "";
+}
+</script>
+
+</body>
+</html>
