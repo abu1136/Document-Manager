@@ -223,3 +223,35 @@ All critical issues have been resolved. The application is:
 **Files Changed**: 19
 **Tests Added**: 5 (all passing)
 **Security Scans**: Passed
+
+---
+
+## 🔄 Post-Deployment Migration
+
+### Database Schema Update
+
+**Issue**: The column name was changed from `password_hash` to `password` to match the codebase usage.
+
+**Impact**: If the database was created with the old schema before this update, you'll get errors when creating users.
+
+**Solution**: Run the migration script:
+
+```bash
+# If using Docker
+docker-compose exec backend python migrate_database.py
+
+# If running manually
+cd backend
+python migrate_database.py
+```
+
+This script will:
+1. Check if the `password_hash` column exists
+2. Rename it to `password` if needed
+3. Leave the database unchanged if already migrated
+
+**Alternative**: Recreate the database (⚠️ will lose all data):
+```bash
+docker-compose down -v
+docker-compose up -d
+```

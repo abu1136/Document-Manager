@@ -41,7 +41,20 @@ cd Document-Manager
 docker-compose up -d
 ```
 
-3. Access the application:
+3. **IMPORTANT - Database Migration (if upgrading from older version):**
+   
+   If you're upgrading from an older version and getting errors when creating users, you need to run the database migration:
+   
+   ```bash
+   # Option 1: Run migration inside the container
+   docker-compose exec backend python migrate_database.py
+   
+   # Option 2: Recreate the database (will lose all data)
+   docker-compose down -v
+   docker-compose up -d
+   ```
+
+4. Access the application:
 - Navigate to `http://localhost:8000/ui/setup.html`
 - Create the initial admin user
 - Login at `http://localhost:8000/ui/login.html`
@@ -154,6 +167,48 @@ Document-Manager/
 - **users**: User accounts (id, username, password, role)
 - **documents**: Document records (id, document_number, title, paths, created_by)
 - **letterhead**: Letterhead templates (id, filename, filetype, uploaded_by, active)
+
+## Troubleshooting
+
+### Unable to Create Users
+
+If you're getting errors when trying to create users after updating the code, this is likely due to a database schema mismatch. The column name was changed from `password_hash` to `password`.
+
+**Solution 1: Run the migration script (recommended)**
+```bash
+# If using Docker
+docker-compose exec backend python migrate_database.py
+
+# If running manually
+cd backend
+python migrate_database.py
+```
+
+**Solution 2: Recreate the database (will lose all data)**
+```bash
+# If using Docker
+docker-compose down -v
+docker-compose up -d
+
+# If running manually
+mysql -u root -p -e "DROP DATABASE IF EXISTS document_manager;"
+mysql -u root -p < sql/init.sql
+```
+
+### Other Common Issues
+
+**Database Connection Errors:**
+- Ensure MySQL is running
+- Check the DATABASE_URL environment variable
+- Verify MySQL credentials (docuser:docpass)
+
+**Authentication Errors:**
+- Clear browser localStorage and try logging in again
+- Check that JWT_SECRET is set in environment variables
+
+**File Upload Issues:**
+- Ensure the `files/` directory exists and is writable
+- Check that uploaded filenames don't contain special characters
 
 ## Recent Fixes
 
