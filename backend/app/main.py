@@ -8,8 +8,8 @@ app = FastAPI(title="Document Manager")
 
 @app.on_event("startup")
 def startup():
-    # Wait for MySQL
-    for _ in range(10):
+    # Wait for MySQL (increase attempts to support initial DB init)
+    for _ in range(40):  # ~40 * 3s = 120s max wait
         try:
             Base.metadata.create_all(bind=engine)
             break
