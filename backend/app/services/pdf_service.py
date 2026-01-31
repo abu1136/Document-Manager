@@ -9,8 +9,8 @@ import os
 def generate_pdf(
     letterhead_path: str,
     content: str,
-    output_path: str,
-    document_id: str
+    document_id: str,
+    output_path: str
 ):
     """
     Generate a PDF using a letterhead PDF/image as background

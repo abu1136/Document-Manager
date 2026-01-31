@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query, Form, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime
 import os
+import re
 
 from app.database import get_db
 from app.models.document import Document
@@ -13,6 +14,15 @@ from app.services.pdf_service import generate_pdf
 from app.services.docx_service import generate_docx
 
 router = APIRouter()
+
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitize filename to prevent directory traversal and injection attacks"""
+    # Remove path separators and special characters
+    filename = os.path.basename(filename)
+    # Remove any characters that aren't alphanumeric, dot, dash, or underscore
+    filename = re.sub(r'[^\w\-.]', '_', filename)
+    return filename
 
 
 @router.post("/create")
@@ -32,9 +42,10 @@ def create_document(
     if not letterhead:
         raise HTTPException(status_code=400, detail="No active letterhead found. Please upload a letterhead first.")
     
-    # Create paths
-    pdf_filename = f"{doc_number.replace('/', '_')}.pdf"
-    docx_filename = f"{doc_number.replace('/', '_')}.docx"
+    # Create sanitized filenames
+    safe_doc_id = doc_number.replace('/', '_')
+    pdf_filename = f"{safe_doc_id}.pdf"
+    docx_filename = f"{safe_doc_id}.docx"
     pdf_path = os.path.join("documents", pdf_filename)
     docx_path = os.path.join("documents", docx_filename)
     
@@ -44,12 +55,15 @@ def create_document(
     # Full paths for file operations
     full_pdf_path = os.path.join("files", pdf_path)
     full_docx_path = os.path.join("files", docx_path)
-    letterhead_path = os.path.join("files/letterhead", letterhead.filename)
     
-    # Generate documents
+    # Sanitize letterhead filename and construct path
+    safe_letterhead_filename = sanitize_filename(letterhead.filename)
+    letterhead_path = os.path.join("files/letterhead", safe_letterhead_filename)
+    
+    # Generate documents with standardized parameter order
     try:
-        generate_pdf(letterhead_path, content, full_pdf_path, doc_number)
-        generate_docx(content, full_docx_path, doc_number, title)
+        generate_pdf(letterhead_path, content, doc_number, full_pdf_path)
+        generate_docx(title, content, doc_number, full_docx_path)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating documents: {str(e)}")
     

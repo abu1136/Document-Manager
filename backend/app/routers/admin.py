@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 import os
 import shutil
+import re
 
 from app.database import get_db
 from app.models.user import User
@@ -10,6 +11,15 @@ from app.routers.auth import get_current_user
 from app.utils.security import hash_password
 
 router = APIRouter()
+
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitize filename to prevent directory traversal and injection attacks"""
+    # Remove path separators
+    filename = os.path.basename(filename)
+    # Remove any characters that aren't alphanumeric, dot, dash, or underscore
+    filename = re.sub(r'[^\w\-.]', '_', filename)
+    return filename
 
 
 # ===============================
@@ -93,10 +103,13 @@ def upload_letterhead(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
 
+    # Sanitize filename
+    safe_filename = sanitize_filename(file.filename)
+    
     upload_dir = "files/letterhead"
     os.makedirs(upload_dir, exist_ok=True)
 
-    file_path = os.path.join(upload_dir, file.filename)
+    file_path = os.path.join(upload_dir, safe_filename)
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -105,10 +118,10 @@ def upload_letterhead(
     db.query(Letterhead).update({"active": False})
 
     # Determine file type
-    file_type = "pdf" if file.filename.lower().endswith('.pdf') else "image"
+    file_type = "pdf" if safe_filename.lower().endswith('.pdf') else "image"
 
     letterhead = Letterhead(
-        filename=file.filename,
+        filename=safe_filename,
         filetype=file_type,
         uploaded_by=current_user.id,
         active=True
