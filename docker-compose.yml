@@ -9,22 +9,26 @@ services:
     volumes:
       - db:/var/lib/mysql
       - ./sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   backend:
     build: ./backend
     environment:
-      DB_USER: docuser
-      DB_PASS: docpass
-      DB_NAME: document_manager
-      JWT_SECRET: supersecret
+      DATABASE_URL: "mysql+pymysql://docuser:docpass@mysql:3306/document_manager"
+      JWT_SECRET: "supersecret_change_in_production_min32chars"
     volumes:
       - ./files:/app/files
       - ./backend/app/assets/letterhead:/app/app/assets/letterhead
-      - ./frontend:/app/frontend        # ✅ THIS IS THE FIX
+      - ./frontend:/app/frontend
     ports:
       - "8000:8000"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 
 volumes:
   db:
